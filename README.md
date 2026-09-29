@@ -6,7 +6,7 @@
 
 A small desktop app for viewing and editing image EXIF metadata, written in Rust using <a href="https://github.com/iced-rs/iced">iced</a>.
 
-<img src="docs/screenshot.jpg" width="460px">
+<img src="docs/screenshot.jpg" width="720px">
 
 </div>
 
