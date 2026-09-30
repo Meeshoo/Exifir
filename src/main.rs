@@ -39,6 +39,7 @@ enum Message {
 #[derive(Debug, Clone)]
 enum Error {
     DialogClosed,
+    MetadataGetFailed,
 }
 
 impl ImageMetadata {
@@ -223,63 +224,84 @@ fn get_metadata(image_path: PathBuf) -> ImageMetadata {
 
     let endian = metadata.get_endian();
 
-    let datetime_created = metadata
+    let datetime_created = match metadata
         .get_tag(&&ExifTag::DateTimeOriginal(String::new()))
         .next()
-        .expect("Can't get datetime");
+    {
+        Some(datetime_created) => datetime_created,
+        None => {
+            println!("Could not get DateTimeOrigial from selected image");
+            &ExifTag::DateTimeOriginal(String::new())
+        }
+    };
 
     image_metadata.datetime_created = String::from_u8_vec(
         &datetime_created.value_as_u8_vec(&metadata.get_endian()),
         &endian,
     );
 
-    let camera_brand = metadata
-        .get_tag(&&ExifTag::Make(String::new()))
-        .next()
-        .expect("Can't get datetime");
+    let camera_brand = match metadata.get_tag(&&ExifTag::Make(String::new())).next() {
+        Some(camera_brand) => camera_brand,
+        None => {
+            println!("Could not get Make from selected image");
+            &ExifTag::Make(String::new())
+        }
+    };
 
     image_metadata.camera_brand = String::from_u8_vec(
         &camera_brand.value_as_u8_vec(&metadata.get_endian()),
         &endian,
     );
 
-    let camera_model = metadata
-        .get_tag(&&ExifTag::Model(String::new()))
-        .next()
-        .expect("Can't get user comment");
+    let camera_model = match metadata.get_tag(&&ExifTag::Model(String::new())).next() {
+        Some(camera_model) => camera_model,
+        None => {
+            println!("Could not get Model from selected image");
+            &ExifTag::Model(String::new())
+        }
+    };
 
     image_metadata.camera_model = String::from_u8_vec(
         &camera_model.value_as_u8_vec(&metadata.get_endian()),
         &endian,
     );
 
-    let user_comment = metadata
-        .get_tag(&&ExifTag::UserComment(Vec::new()))
-        .next()
-        .expect("Can't get user comment");
+    let user_comment = match metadata.get_tag(&&ExifTag::UserComment(Vec::new())).next() {
+        Some(user_comment) => user_comment,
+        None => {
+            println!("Could not get UserComment from selected image");
+            &ExifTag::UserComment(Vec::new())
+        }
+    };
 
     image_metadata.user_comment = String::from_u8_vec(
         &user_comment.value_as_u8_vec(&metadata.get_endian()),
         &endian,
     );
 
-    let gps_longitude = metadata
-        .get_tag(&&&ExifTag::GPSLongitude(Vec::new()))
-        .next()
-        .expect("Can't get datetime");
-
-    image_metadata.gps_longitude = String::from_u8_vec(
-        &gps_longitude.value_as_u8_vec(&metadata.get_endian()),
-        &endian,
-    );
-
-    let gps_latitude = metadata
-        .get_tag(&&&ExifTag::GPSLatitude(Vec::new()))
-        .next()
-        .expect("Can't get user comment");
+    let gps_latitude = match metadata.get_tag(&&ExifTag::GPSLatitude(Vec::new())).next() {
+        Some(gps_latitude) => gps_latitude,
+        None => {
+            println!("Could not get GPSLatitude from selected image");
+            &ExifTag::GPSLatitude(Vec::new())
+        }
+    };
 
     image_metadata.gps_latitude = String::from_u8_vec(
         &gps_latitude.value_as_u8_vec(&metadata.get_endian()),
+        &endian,
+    );
+
+    let gps_longitude = match metadata.get_tag(&&ExifTag::GPSLongitude(Vec::new())).next() {
+        Some(gps_longitude) => gps_longitude,
+        None => {
+            println!("Could not get GPSLongitude from selected image");
+            &ExifTag::GPSLatitude(Vec::new())
+        }
+    };
+
+    image_metadata.gps_longitude = String::from_u8_vec(
+        &gps_longitude.value_as_u8_vec(&metadata.get_endian()),
         &endian,
     );
 
