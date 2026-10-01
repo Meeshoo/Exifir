@@ -5,8 +5,8 @@ use std::path::PathBuf;
 use little_exif::exif_tag::ExifTag;
 use little_exif::metadata::Metadata;
 
-use iced::widget::{button, column, container, grid, image, row, text, Column, Image};
-use iced::{Fill, Renderer, Shrink, Theme};
+use iced::widget::{button, column, container, grid, image, row, text, Column};
+use iced::{Fill, Shrink};
 use little_exif::u8conversion::U8conversion;
 use rfd::FileDialog;
 
@@ -18,8 +18,8 @@ struct Viewer {
     metadata_camera_brand: String,
     metadata_camera_model: String,
     metadata_user_comment: String,
-    metadata_gps_latitude: String,  //-0.137348
-    metadata_gps_longitude: String, //50.819250
+    metadata_gps_latitude: String,
+    metadata_gps_longitude: String,
 }
 
 struct ImageMetadata {
@@ -34,6 +34,7 @@ struct ImageMetadata {
 #[derive(Debug, Clone, Copy)]
 enum Message {
     OpenFolder,
+    OpenFiles,
     CloseFolder,
 }
 
@@ -79,19 +80,26 @@ impl Viewer {
         match message {
             Message::OpenFolder => {
                 self.path_of_all_images = load_folder();
-                //let image_path: PathBuf = load_image();
 
-                // self.image_path = image_path
-                //     .to_str()
-                //     .expect("Failed to get image path")
-                //     .into();
-                // self.image_filename = image_path
-                //     .file_name()
-                //     .expect("Failed to get file name")
-                //     .to_str()
-                //     .expect("Failed to cast file name to string")
-                //     .to_string();
+                // THIS IS HARD CODED FOR NOW
+                self.image_path = String::from("/home/mitch/Pictures/EXIFIR_TEST/000086280005.jpg");
+                self.image_filename = String::from("THIS IS HARDCODED");
 
+                let metadata = get_metadata(PathBuf::from(
+                    "/home/mitch/Pictures/EXIFIR_TEST/000086280005.jpg",
+                ));
+
+                self.metadata_datetime_created = metadata.datetime_created;
+                self.metadata_camera_brand = metadata.camera_brand;
+                self.metadata_camera_model = metadata.camera_model;
+                self.metadata_user_comment = metadata.user_comment;
+                self.metadata_gps_latitude = metadata.gps_latitude;
+                self.metadata_gps_longitude = metadata.gps_longitude;
+            }
+            Message::OpenFiles => {
+                self.path_of_all_images = load_files();
+
+                // THIS IS HARD CODED FOR NOW
                 self.image_path = String::from("/home/mitch/Pictures/EXIFIR_TEST/000086280005.jpg");
                 self.image_filename = String::from("THIS IS HARDCODED");
 
@@ -122,9 +130,10 @@ impl Viewer {
 
     fn view(&self) -> Column<'_, Message> {
         // MENU
-        let open_folder_button = button("Open New Folder").on_press(Message::OpenFolder);
+        let open_folder_button = button("Open Folder").on_press(Message::OpenFolder);
+        let open_multiple_files_button = button("Open Files").on_press(Message::OpenFiles);
         let reset_button = button("Close Current Folder").on_press(Message::CloseFolder);
-        let menu = row![open_folder_button, reset_button].spacing(10);
+        let menu = row![open_folder_button, open_multiple_files_button, reset_button].spacing(10);
 
         // IMAGE PANEL
         let image_name: text::Text = text(&self.image_filename)
@@ -211,17 +220,31 @@ impl Viewer {
     }
 }
 
-fn load_image() -> PathBuf {
-    let file_handle = match FileDialog::new()
-        .add_filter("image", &["png", "jpg", "jpeg"])
+fn load_files() -> Vec<String> {
+    let mut files: Vec<String> = Vec::new();
+    let file_handles = match FileDialog::new()
         .set_directory("Pictures/")
-        .set_title("Choose an image...")
-        .pick_file()
+        .add_filter("images", &["jpg", "jpeg", "png"])
+        .set_title("Choose multiple files...")
+        .pick_files()
     {
-        Some(file_handle) => file_handle,
-        None => PathBuf::new(),
+        Some(file_handles) => file_handles,
+        None => {
+            println!("Could not get folder");
+            Vec::new()
+        }
     };
-    file_handle.as_path().into()
+
+    for file in file_handles {
+        files.push(
+            file.as_path()
+                .to_str()
+                .expect("Failed to cast file path to string")
+                .to_string(),
+        );
+    }
+
+    files
 }
 
 fn load_folder() -> Vec<String> {
