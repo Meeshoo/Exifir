@@ -1,16 +1,17 @@
 use std::fmt::Debug;
+use std::fs;
 use std::path::PathBuf;
 
-use iced::keyboard::key::Named::New;
 use little_exif::exif_tag::ExifTag;
 use little_exif::metadata::Metadata;
 
-use iced::widget::{button, column, container, image, row, text, Column};
-use iced::{Fill, Shrink};
+use iced::widget::{button, column, container, grid, image, row, text, Column, Image};
+use iced::{Fill, Renderer, Shrink, Theme};
 use little_exif::u8conversion::U8conversion;
 use rfd::FileDialog;
 
 struct Viewer {
+    path_of_all_images: Vec<String>,
     image_path: String,
     image_filename: String,
     metadata_datetime_created: String,
@@ -32,15 +33,15 @@ struct ImageMetadata {
 
 #[derive(Debug, Clone, Copy)]
 enum Message {
-    OpenFile,
-    Reset,
+    OpenFolder,
+    CloseFolder,
 }
 
-#[derive(Debug, Clone)]
-enum Error {
-    DialogClosed,
-    MetadataGetFailed,
-}
+// #[derive(Debug, Clone)]
+// enum Error {
+//     DialogClosed,
+//     MetadataGetFailed,
+// }
 
 impl ImageMetadata {
     fn new() -> Self {
@@ -58,6 +59,7 @@ impl ImageMetadata {
 impl Viewer {
     fn new() -> Self {
         Viewer {
+            path_of_all_images: Vec::new(),
             image_path: String::from(""),
             image_filename: String::from(""),
             metadata_datetime_created: String::from(""),
@@ -75,21 +77,27 @@ impl Viewer {
 
     fn update(&mut self, message: Message) {
         match message {
-            Message::OpenFile => {
-                let image_path: PathBuf = load_image();
-                self.image_path = image_path
-                    .to_str()
-                    .expect("Failed to get image path")
-                    .into();
-                // Todo: Fix this abomination
-                self.image_filename = image_path
-                    .file_name()
-                    .expect("Failed to get file name")
-                    .to_str()
-                    .expect("Failed to cast file name to string")
-                    .to_string();
+            Message::OpenFolder => {
+                self.path_of_all_images = load_folder();
+                //let image_path: PathBuf = load_image();
 
-                let metadata = get_metadata(image_path);
+                // self.image_path = image_path
+                //     .to_str()
+                //     .expect("Failed to get image path")
+                //     .into();
+                // self.image_filename = image_path
+                //     .file_name()
+                //     .expect("Failed to get file name")
+                //     .to_str()
+                //     .expect("Failed to cast file name to string")
+                //     .to_string();
+
+                self.image_path = String::from("/home/mitch/Pictures/EXIFIR_TEST/000086280005.jpg");
+                self.image_filename = String::from("THIS IS HARDCODED");
+
+                let metadata = get_metadata(PathBuf::from(
+                    "/home/mitch/Pictures/EXIFIR_TEST/000086280005.jpg",
+                ));
 
                 self.metadata_datetime_created = metadata.datetime_created;
                 self.metadata_camera_brand = metadata.camera_brand;
@@ -98,7 +106,8 @@ impl Viewer {
                 self.metadata_gps_latitude = metadata.gps_latitude;
                 self.metadata_gps_longitude = metadata.gps_longitude;
             }
-            Message::Reset => {
+            Message::CloseFolder => {
+                self.path_of_all_images = Vec::new();
                 self.image_path = String::from("");
                 self.image_filename = String::from("");
                 self.metadata_datetime_created = String::from("");
@@ -113,9 +122,9 @@ impl Viewer {
 
     fn view(&self) -> Column<'_, Message> {
         // MENU
-        let open_file_button = button("Open File").on_press(Message::OpenFile);
-        let reset_button = button("Reset").on_press(Message::Reset);
-        let menu = row![open_file_button, reset_button].spacing(10);
+        let open_folder_button = button("Open New Folder").on_press(Message::OpenFolder);
+        let reset_button = button("Close Current Folder").on_press(Message::CloseFolder);
+        let menu = row![open_folder_button, reset_button].spacing(10);
 
         // IMAGE PANEL
         let image_name: text::Text = text(&self.image_filename)
@@ -124,9 +133,15 @@ impl Viewer {
             .height(20)
             .center();
 
-        let image: image::Image = image(&self.image_path).width(Fill);
+        let mut image_grid = grid!().columns(3);
 
-        let image_container = column!(image, image_name).spacing(10);
+        for image in &self.path_of_all_images {
+            let iced_image: image::Image = image::Image::new(image).width(150);
+            image_grid = image_grid.push(iced_image);
+            self.path_of_all_images.iter().next();
+        }
+
+        let image_container = column!(image_grid, image_name).spacing(10);
 
         let image_panel = container(image_container)
             .style(container::bordered_box)
@@ -197,24 +212,45 @@ impl Viewer {
 }
 
 fn load_image() -> PathBuf {
-    let file_handle = FileDialog::new()
+    let file_handle = match FileDialog::new()
         .add_filter("image", &["png", "jpg", "jpeg"])
         .set_directory("Pictures/")
         .set_title("Choose an image...")
         .pick_file()
-        .expect("Failed to get file");
+    {
+        Some(file_handle) => file_handle,
+        None => PathBuf::new(),
+    };
     file_handle.as_path().into()
 }
 
-// fn load_folder() -> PathBuf {
-//     let file_handle = FileDialog::new()
-//         .add_filter("image", &["png", "jpg", "jpeg"])
-//         .set_directory("/home")
-//         .set_title("Choose a folder...")
-//         .pick_folder()
-//         .expect("Failed to get folder");
-//     file_handle
-// }
+fn load_folder() -> Vec<String> {
+    let mut files: Vec<String> = Vec::new();
+    let folder = match FileDialog::new()
+        .set_directory("Pictures/")
+        .set_title("Choose a folder...")
+        .pick_folder()
+    {
+        Some(file_handle) => file_handle,
+        None => {
+            println!("Could not get folder");
+            PathBuf::new()
+        }
+    };
+
+    let folder_contents = fs::read_dir(folder).expect("OOOOPS");
+    for file in folder_contents {
+        files.push(
+            file.expect("oops4")
+                .path()
+                .to_str()
+                .expect("oops5")
+                .to_string(),
+        );
+    }
+
+    files
+}
 
 fn get_metadata(image_path: PathBuf) -> ImageMetadata {
     let mut image_metadata: ImageMetadata = ImageMetadata::new();
