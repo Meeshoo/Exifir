@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use little_exif::exif_tag::ExifTag;
 use little_exif::metadata::Metadata;
 
-use iced::widget::{button, column, container, grid, image, row, text, Column};
+use iced::widget::{button, column, container, grid, image, row, scrollable, text, Column};
 use iced::{Fill, Shrink};
 use little_exif::u8conversion::U8conversion;
 use rfd::FileDialog;
@@ -144,30 +144,34 @@ impl Viewer {
 
         let mut image_grid = grid!().columns(3);
 
-        for image in &self.path_of_all_images {
-            let iced_image: image::Image = image::Image::new(image).width(Fill).height(Fill);
-            let iced_image_name: text::Text = text("example-teehee.jpg")
-                .height(Shrink)
-                .width(Fill)
-                .height(20)
-                .center();
-            let image_column = column!(iced_image, iced_image_name).spacing(10);
-            let image_container = container(image_column)
-                .style(container::bordered_box)
-                .padding(5)
-                .max_width(300)
-                .max_height(300);
-            image_grid = image_grid.push(image_container);
-            self.path_of_all_images.iter().next();
+        if self.path_of_all_images.len() != 0 {
+            for image in &self.path_of_all_images {
+                let image: image::Image = image::Image::new(image).width(Fill).height(Fill);
+                let image_name: text::Text = text("example-teehee.jpg")
+                    .height(Shrink)
+                    .width(Fill)
+                    .height(20)
+                    .center();
+                let image_column = column!(image, image_name).spacing(10);
+                let image_container = container(image_column)
+                    .style(container::bordered_box)
+                    .padding(5)
+                    .max_width(300)
+                    .max_height(300);
+                image_grid = image_grid.push(image_container);
+                self.path_of_all_images.iter().next();
+            }
+        } else {
+            image_grid = image_grid.push(text(""));
         }
 
-        //let images_container = column!(image_grid, image_name).spacing(10);
-
-        let image_panel = container(image_grid)
-            .style(container::bordered_box)
-            .height(Fill)
-            .width(Fill)
-            .center(Fill);
+        let image_panel = scrollable(
+            container(image_grid)
+                .style(container::bordered_box)
+                .height(Fill)
+                .width(Fill)
+                .center(Fill),
+        );
 
         // METADATA PANEL
         let metadata_datetime_created: text::Text =
