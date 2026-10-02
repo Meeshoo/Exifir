@@ -124,7 +124,7 @@ impl Viewer {
         let open_folder_button = button("Open Folder").on_press(Message::OpenFolder);
         let open_multiple_files_button = button("Open Files").on_press(Message::OpenFiles);
         let reset_button = button("Close Current Folder").on_press(Message::CloseFolder);
-        let menu = row![open_folder_button, open_multiple_files_button, reset_button].spacing(10);
+        let menu = row![open_folder_button, open_multiple_files_button, space::Space::new().width(Fill), reset_button].spacing(10);
 
         // IMAGE PANEL
         // let image_name: text::Text = text(&self.image_filename)
