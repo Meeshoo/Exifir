@@ -2,25 +2,29 @@ use std::fmt::Debug;
 use std::fs;
 use std::path::PathBuf;
 
+use iced::advanced::Widget;
 use little_exif::exif_tag::ExifTag;
 use little_exif::metadata::Metadata;
 
-use iced::widget::{button, column, container, grid, image, row, scrollable, text, Column};
+use iced::widget::{Column, button, column, container, grid, image, row, scrollable, space, text};
 use iced::{Fill, Shrink};
 use little_exif::u8conversion::U8conversion;
 use rfd::FileDialog;
 
 struct Viewer {
-    path_of_all_images: Vec<String>,
-    metadata_datetime_created: String,
-    metadata_camera_brand: String,
-    metadata_camera_model: String,
-    metadata_user_comment: String,
-    metadata_gps_latitude: String,
-    metadata_gps_longitude: String,
+    path_of_all_images: Vec<ImageMetadata>,
+    selected_image_filename: String,
+    selected_image_datetime_created: String,
+    selected_image_camera_brand: String,
+    selected_image_camera_model: String,
+    selected_image_user_comment: String,
+    selected_image_gps_latitude: String,
+    selected_image_gps_longitude: String,
 }
 
 struct ImageMetadata {
+    image_path: String,
+    image_filename: String,
     datetime_created: String,
     camera_brand: String,
     camera_model: String,
@@ -29,16 +33,12 @@ struct ImageMetadata {
     gps_longitude: String,
 }
 
-struct ImageContainer {
-    image_path: String,
-    image_filename: String,
-}
-
 #[derive(Debug, Clone, Copy)]
 enum Message {
     OpenFolder,
     OpenFiles,
     CloseFolder,
+    ClickImage,
 }
 
 // #[derive(Debug, Clone)]
@@ -47,18 +47,11 @@ enum Message {
 //     MetadataGetFailed,
 // }
 
-impl ImageContainer {
-    fn new() -> Self {
-        ImageContainer {
-            image_path: String::from(""),
-            image_filename: String::from(""),
-        }
-    }
-}
-
 impl ImageMetadata {
     fn new() -> Self {
         ImageMetadata {
+            image_path: String::new(),
+            image_filename: String::new(),
             datetime_created: String::new(),
             camera_brand: String::new(),
             camera_model: String::new(),
@@ -73,12 +66,13 @@ impl Viewer {
     fn new() -> Self {
         Viewer {
             path_of_all_images: Vec::new(),
-            metadata_datetime_created: String::from(""),
-            metadata_camera_brand: String::from(""),
-            metadata_camera_model: String::from(""),
-            metadata_user_comment: String::from(""),
-            metadata_gps_latitude: String::from(""),
-            metadata_gps_longitude: String::from(""),
+            selected_image_filename: String::from(""),
+            selected_image_datetime_created: String::from(""),
+            selected_image_camera_brand: String::from(""),
+            selected_image_camera_model: String::from(""),
+            selected_image_user_comment: String::from(""),
+            selected_image_gps_latitude: String::from(""),
+            selected_image_gps_longitude: String::from(""),
         }
     }
 
@@ -91,39 +85,36 @@ impl Viewer {
             Message::OpenFolder => {
                 self.path_of_all_images = load_folder();
 
-                let metadata = get_metadata(PathBuf::from(
-                    "/home/mitch/Pictures/EXIFIR_TEST/000086280005.jpg",
-                ));
-
-                self.metadata_datetime_created = metadata.datetime_created;
-                self.metadata_camera_brand = metadata.camera_brand;
-                self.metadata_camera_model = metadata.camera_model;
-                self.metadata_user_comment = metadata.user_comment;
-                self.metadata_gps_latitude = metadata.gps_latitude;
-                self.metadata_gps_longitude = metadata.gps_longitude;
+                // LOAD FIRST FOR NOW ONLY AS A TEST
+                self.selected_image_datetime_created = self.path_of_all_images.first().expect("Failed to get image").datetime_created.to_owned();
+                self.selected_image_camera_brand = self.path_of_all_images.first().expect("Failed to get image").camera_brand.to_owned();
+                self.selected_image_camera_model = self.path_of_all_images.first().expect("Failed to get image").camera_model.to_owned();
+                self.selected_image_user_comment = self.path_of_all_images.first().expect("Failed to get image").user_comment.to_owned();
+                self.selected_image_gps_latitude = self.path_of_all_images.first().expect("Failed to get image").gps_latitude.to_owned();
+                self.selected_image_gps_longitude = self.path_of_all_images.first().expect("Failed to get image").gps_longitude.to_owned();
             }
             Message::OpenFiles => {
                 self.path_of_all_images = load_files();
 
-                let metadata = get_metadata(PathBuf::from(
-                    "/home/mitch/Pictures/EXIFIR_TEST/000086280005.jpg",
-                ));
-
-                self.metadata_datetime_created = metadata.datetime_created;
-                self.metadata_camera_brand = metadata.camera_brand;
-                self.metadata_camera_model = metadata.camera_model;
-                self.metadata_user_comment = metadata.user_comment;
-                self.metadata_gps_latitude = metadata.gps_latitude;
-                self.metadata_gps_longitude = metadata.gps_longitude;
+                // LOAD FIRST FOR NOW ONLY AS A TEST
+                self.selected_image_datetime_created = self.path_of_all_images.first().expect("Failed to get image").datetime_created.to_owned();
+                self.selected_image_camera_brand = self.path_of_all_images.first().expect("Failed to get image").camera_brand.to_owned();
+                self.selected_image_camera_model = self.path_of_all_images.first().expect("Failed to get image").camera_model.to_owned();
+                self.selected_image_user_comment = self.path_of_all_images.first().expect("Failed to get image").user_comment.to_owned();
+                self.selected_image_gps_latitude = self.path_of_all_images.first().expect("Failed to get image").gps_latitude.to_owned();
+                self.selected_image_gps_longitude = self.path_of_all_images.first().expect("Failed to get image").gps_longitude.to_owned();
             }
             Message::CloseFolder => {
                 self.path_of_all_images = Vec::new();
-                self.metadata_datetime_created = String::from("");
-                self.metadata_camera_brand = String::from("");
-                self.metadata_camera_model = String::from("");
-                self.metadata_user_comment = String::from("");
-                self.metadata_gps_latitude = String::from("");
-                self.metadata_gps_longitude = String::from("");
+                self.selected_image_datetime_created = String::from("");
+                self.selected_image_camera_brand = String::from("");
+                self.selected_image_camera_model = String::from("");
+                self.selected_image_user_comment = String::from("");
+                self.selected_image_gps_latitude = String::from("");
+                self.selected_image_gps_longitude = String::from("");
+            }
+            Message::ClickImage => {
+                println!("An image has been clicked yo");
             }
         }
     }
@@ -145,9 +136,9 @@ impl Viewer {
         let mut image_grid = grid!().columns(3);
 
         if self.path_of_all_images.len() != 0 {
-            for image in &self.path_of_all_images {
-                let image: image::Image = image::Image::new(image).width(Fill).height(Fill);
-                let image_name: text::Text = text("example-teehee.jpg")
+            for item in &self.path_of_all_images {
+                let image: image::Image = image::Image::new(item.image_path.to_owned()).width(Fill).height(Fill);
+                let image_name: text::Text = text(item.image_filename.to_owned())
                     .height(Shrink)
                     .width(Fill)
                     .height(20)
@@ -174,49 +165,49 @@ impl Viewer {
         );
 
         // METADATA PANEL
-        let metadata_datetime_created: text::Text =
-            text("Date Created: ".to_owned() + &self.metadata_datetime_created)
+        let selected_image_datetime_created: text::Text =
+            text("Date Created: ".to_owned() + &self.selected_image_datetime_created)
                 .height(Shrink)
                 .width(Shrink)
                 .center();
 
-        let metadata_camera_brand: text::Text =
-            text("Camera Brand: ".to_owned() + &self.metadata_camera_brand)
+        let selected_image_camera_brand: text::Text =
+            text("Camera Brand: ".to_owned() + &self.selected_image_camera_brand)
                 .height(Shrink)
                 .width(Shrink)
                 .center();
 
-        let metadata_camera_model: text::Text =
-            text("Camera Model: ".to_owned() + &self.metadata_camera_model)
+        let selected_image_camera_model: text::Text =
+            text("Camera Model: ".to_owned() + &self.selected_image_camera_model)
                 .height(Shrink)
                 .width(Shrink)
                 .center();
 
-        let metadata_user_comment: text::Text =
-            text("User Comment: ".to_owned() + &self.metadata_user_comment)
+        let selected_image_user_comment: text::Text =
+            text("User Comment: ".to_owned() + &self.selected_image_user_comment)
                 .height(Shrink)
                 .width(Shrink)
                 .center();
 
-        let metadata_gps_latitude: text::Text =
-            text("GPS Latitude: ".to_owned() + &self.metadata_gps_latitude)
+        let selected_image_gps_latitude: text::Text =
+            text("GPS Latitude: ".to_owned() + &self.selected_image_gps_latitude)
                 .height(Shrink)
                 .width(Shrink)
                 .center();
 
-        let metadata_gps_longitude: text::Text =
-            text("GPS Longitude: ".to_owned() + &self.metadata_gps_longitude)
+        let selected_image_gps_longitude: text::Text =
+            text("GPS Longitude: ".to_owned() + &self.selected_image_gps_longitude)
                 .height(Shrink)
                 .width(Shrink)
                 .center();
 
         let metadata_container: Column<'_, Message> = column!(
-            metadata_datetime_created,
-            metadata_camera_brand,
-            metadata_camera_model,
-            metadata_user_comment,
-            metadata_gps_latitude,
-            metadata_gps_longitude
+            selected_image_datetime_created,
+            selected_image_camera_brand,
+            selected_image_camera_model,
+            selected_image_user_comment,
+            selected_image_gps_latitude,
+            selected_image_gps_longitude
         )
         .width(Shrink)
         .spacing(10)
@@ -235,8 +226,8 @@ impl Viewer {
     }
 }
 
-fn load_files() -> Vec<String> {
-    let mut files: Vec<String> = Vec::new();
+fn load_files() -> Vec<ImageMetadata> {
+    let mut files: Vec<ImageMetadata> = Vec::new();
     let file_handles = match FileDialog::new()
         .set_directory("Pictures/")
         .add_filter("images", &["jpg", "jpeg", "png"])
@@ -251,19 +242,16 @@ fn load_files() -> Vec<String> {
     };
 
     for file in file_handles {
-        files.push(
-            file.as_path()
-                .to_str()
-                .expect("Failed to cast file path to string")
-                .to_string(),
-        );
+        let image_metadata: ImageMetadata = get_metadata(file);
+
+        files.push(image_metadata);
     }
 
     files
 }
 
-fn load_folder() -> Vec<String> {
-    let mut files: Vec<String> = Vec::new();
+fn load_folder() -> Vec<ImageMetadata> {
+    let mut files: Vec<ImageMetadata> = Vec::new();
     let folder = match FileDialog::new()
         .set_directory("Pictures/")
         .set_title("Choose a folder...")
@@ -278,13 +266,9 @@ fn load_folder() -> Vec<String> {
 
     let folder_contents = fs::read_dir(folder).expect("OOOOPS");
     for file in folder_contents {
-        files.push(
-            file.expect("oops4")
-                .path()
-                .to_str()
-                .expect("oops5")
-                .to_string(),
-        );
+        let image_metadata: ImageMetadata = get_metadata(file.expect("Failed to get file").path());
+
+        files.push(image_metadata);
     }
 
     files
@@ -297,6 +281,18 @@ fn get_metadata(image_path: PathBuf) -> ImageMetadata {
         Metadata::new_from_path(image_path.as_path()).expect("Failed to get metadata");
 
     let endian = metadata.get_endian();
+
+    image_metadata.image_path = image_path
+        .to_str()
+        .expect("Failed to convert image path to string")
+        .to_string();
+
+    image_metadata.image_filename = image_path
+        .file_name()
+        .expect("Failed to get filename from path")
+        .to_str()
+        .expect("Failed to convert filename to str")
+        .to_string();
 
     let datetime_created = match metadata
         .get_tag(&&ExifTag::DateTimeOriginal(String::new()))
