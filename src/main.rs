@@ -2,16 +2,14 @@ use std::fmt::Debug;
 use std::fs;
 use std::path::PathBuf;
 
-use iced::advanced::{Widget, mouse};
+use iced::advanced::{mouse, Widget};
 use little_exif::exif_tag::ExifTag;
 use little_exif::metadata::Metadata;
 
-use iced::widget::{Column, button, column, container, grid, image, row, scrollable, space, text};
+use iced::widget::{button, column, container, grid, image, row, scrollable, space, text, Column};
 use iced::{Fill, Shrink};
 use little_exif::u8conversion::U8conversion;
 use rfd::FileDialog;
-
-use crate::Message::ClickImage;
 
 struct Viewer {
     path_of_all_images: Vec<PathBuf>,
@@ -114,32 +112,48 @@ impl Viewer {
         let open_folder_button = button("Open Folder").on_press(Message::OpenFolder);
         let open_multiple_files_button = button("Open Files").on_press(Message::OpenFiles);
         let reset_button = button("Close Current Folder").on_press(Message::CloseFolder);
-        let menu = row![open_folder_button, open_multiple_files_button, space::Space::new().width(Fill), reset_button].spacing(10);
+        let menu = row![
+            open_folder_button,
+            open_multiple_files_button,
+            space::Space::new().width(Fill),
+            reset_button
+        ]
+        .spacing(10);
 
         // IMAGE PANEL
-        // let image_name: text::Text = text(&self.image_filename)
-        //     .height(Shrink)
-        //     .width(Fill)
-        //     .height(20)
-        //     .center();
-
         let mut image_grid = grid!().columns(3);
 
         if self.path_of_all_images.len() != 0 {
             for item in &self.path_of_all_images {
-                let image: image::Image = image::Image::new(item.as_path()).width(Fill).height(Fill);
-                let image_name: text::Text = text(item.file_name().expect("Failed to get filename").to_str().expect("Failed to get str from filename").to_string())
-                    .height(Shrink)
-                    .width(Fill)
-                    .height(20)
-                    .center();
+                let image: image::Image =
+                    image::Image::new(item.as_path()).width(Fill).height(Fill);
+                let image_name: text::Text = text(
+                    item.file_name()
+                        .expect("Failed to get filename")
+                        .to_str()
+                        .expect("Failed to get str from filename")
+                        .to_string(),
+                )
+                .height(Shrink)
+                .width(Fill)
+                .height(20)
+                .center();
                 let image_column = column!(image, image_name).spacing(10);
-                let image_container = button(container(image_column)
-                    .style(container::bordered_box)
-                    .padding(5)
-                    .max_width(300)
-                    .max_height(300)).on_press(Message::ClickImage{file_path: item.as_path().to_str().expect("Failed to convert path to string").to_string() })
-                    .style(button::subtle);
+                let image_container = button(
+                    container(image_column)
+                        .style(container::bordered_box)
+                        .padding(5)
+                        .max_width(300)
+                        .max_height(300),
+                )
+                .on_press(Message::ClickImage {
+                    file_path: item
+                        .as_path()
+                        .to_str()
+                        .expect("Failed to convert path to string")
+                        .to_string(),
+                })
+                .style(button::subtle);
                 image_grid = image_grid.push(image_container);
                 self.path_of_all_images.iter().next();
             }
@@ -271,14 +285,13 @@ fn get_metadata(image_path: PathBuf) -> ImageMetadata {
         .expect("Failed to convert filename to str")
         .to_string();
 
-    let metadata: Metadata =
-        match Metadata::new_from_path(image_path.as_path()) {
-            Ok(metadata) => metadata,
-            Err(error) => {
-                println!("{}", error);
-                return image_metadata
-            }
-        };
+    let metadata: Metadata = match Metadata::new_from_path(image_path.as_path()) {
+        Ok(metadata) => metadata,
+        Err(error) => {
+            println!("{}", error);
+            return image_metadata;
+        }
+    };
 
     let endian = metadata.get_endian();
 
