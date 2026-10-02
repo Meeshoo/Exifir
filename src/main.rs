@@ -2,7 +2,7 @@ use std::fmt::Debug;
 use std::fs;
 use std::path::PathBuf;
 
-use iced::advanced::Widget;
+use iced::advanced::{Widget, mouse};
 use little_exif::exif_tag::ExifTag;
 use little_exif::metadata::Metadata;
 
@@ -11,9 +11,10 @@ use iced::{Fill, Shrink};
 use little_exif::u8conversion::U8conversion;
 use rfd::FileDialog;
 
+use crate::Message::ClickImage;
+
 struct Viewer {
-    path_of_all_images: Vec<ImageMetadata>,
-    selected_image_filename: String,
+    path_of_all_images: Vec<PathBuf>,
     selected_image_datetime_created: String,
     selected_image_camera_brand: String,
     selected_image_camera_model: String,
@@ -33,12 +34,12 @@ struct ImageMetadata {
     gps_longitude: String,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 enum Message {
     OpenFolder,
     OpenFiles,
     CloseFolder,
-    ClickImage,
+    ClickImage { file_path: String },
 }
 
 // #[derive(Debug, Clone)]
@@ -66,7 +67,6 @@ impl Viewer {
     fn new() -> Self {
         Viewer {
             path_of_all_images: Vec::new(),
-            selected_image_filename: String::from(""),
             selected_image_datetime_created: String::from(""),
             selected_image_camera_brand: String::from(""),
             selected_image_camera_model: String::from(""),
@@ -84,25 +84,9 @@ impl Viewer {
         match message {
             Message::OpenFolder => {
                 self.path_of_all_images = load_folder();
-
-                // LOAD FIRST FOR NOW ONLY AS A TEST
-                self.selected_image_datetime_created = self.path_of_all_images.first().expect("Failed to get image").datetime_created.to_owned();
-                self.selected_image_camera_brand = self.path_of_all_images.first().expect("Failed to get image").camera_brand.to_owned();
-                self.selected_image_camera_model = self.path_of_all_images.first().expect("Failed to get image").camera_model.to_owned();
-                self.selected_image_user_comment = self.path_of_all_images.first().expect("Failed to get image").user_comment.to_owned();
-                self.selected_image_gps_latitude = self.path_of_all_images.first().expect("Failed to get image").gps_latitude.to_owned();
-                self.selected_image_gps_longitude = self.path_of_all_images.first().expect("Failed to get image").gps_longitude.to_owned();
             }
             Message::OpenFiles => {
                 self.path_of_all_images = load_files();
-
-                // LOAD FIRST FOR NOW ONLY AS A TEST
-                self.selected_image_datetime_created = self.path_of_all_images.first().expect("Failed to get image").datetime_created.to_owned();
-                self.selected_image_camera_brand = self.path_of_all_images.first().expect("Failed to get image").camera_brand.to_owned();
-                self.selected_image_camera_model = self.path_of_all_images.first().expect("Failed to get image").camera_model.to_owned();
-                self.selected_image_user_comment = self.path_of_all_images.first().expect("Failed to get image").user_comment.to_owned();
-                self.selected_image_gps_latitude = self.path_of_all_images.first().expect("Failed to get image").gps_latitude.to_owned();
-                self.selected_image_gps_longitude = self.path_of_all_images.first().expect("Failed to get image").gps_longitude.to_owned();
             }
             Message::CloseFolder => {
                 self.path_of_all_images = Vec::new();
@@ -113,8 +97,14 @@ impl Viewer {
                 self.selected_image_gps_latitude = String::from("");
                 self.selected_image_gps_longitude = String::from("");
             }
-            Message::ClickImage => {
-                println!("An image has been clicked yo");
+            Message::ClickImage { file_path } => {
+                let metadata = get_metadata(file_path.into());
+                self.selected_image_datetime_created = metadata.datetime_created;
+                self.selected_image_camera_brand = metadata.camera_brand;
+                self.selected_image_camera_model = metadata.camera_model;
+                self.selected_image_user_comment = metadata.user_comment;
+                self.selected_image_gps_latitude = metadata.gps_latitude;
+                self.selected_image_gps_longitude = metadata.gps_longitude;
             }
         }
     }
@@ -137,18 +127,19 @@ impl Viewer {
 
         if self.path_of_all_images.len() != 0 {
             for item in &self.path_of_all_images {
-                let image: image::Image = image::Image::new(item.image_path.to_owned()).width(Fill).height(Fill);
-                let image_name: text::Text = text(item.image_filename.to_owned())
+                let image: image::Image = image::Image::new(item.as_path()).width(Fill).height(Fill);
+                let image_name: text::Text = text(item.file_name().expect("Failed to get filename").to_str().expect("Failed to get str from filename").to_string())
                     .height(Shrink)
                     .width(Fill)
                     .height(20)
                     .center();
                 let image_column = column!(image, image_name).spacing(10);
-                let image_container = container(image_column)
+                let image_container = button(container(image_column)
                     .style(container::bordered_box)
                     .padding(5)
                     .max_width(300)
-                    .max_height(300);
+                    .max_height(300)).on_press(Message::ClickImage{file_path: item.as_path().to_str().expect("Failed to convert path to string").to_string() })
+                    .style(button::subtle);
                 image_grid = image_grid.push(image_container);
                 self.path_of_all_images.iter().next();
             }
@@ -226,8 +217,7 @@ impl Viewer {
     }
 }
 
-fn load_files() -> Vec<ImageMetadata> {
-    let mut files: Vec<ImageMetadata> = Vec::new();
+fn load_files() -> Vec<PathBuf> {
     let file_handles = match FileDialog::new()
         .set_directory("Pictures/")
         .add_filter("images", &["jpg", "jpeg", "png"])
@@ -241,17 +231,11 @@ fn load_files() -> Vec<ImageMetadata> {
         }
     };
 
-    for file in file_handles {
-        let image_metadata: ImageMetadata = get_metadata(file);
-
-        files.push(image_metadata);
-    }
-
-    files
+    file_handles
 }
 
-fn load_folder() -> Vec<ImageMetadata> {
-    let mut files: Vec<ImageMetadata> = Vec::new();
+fn load_folder() -> Vec<PathBuf> {
+    let mut files: Vec<PathBuf> = Vec::new();
     let folder = match FileDialog::new()
         .set_directory("Pictures/")
         .set_title("Choose a folder...")
@@ -266,9 +250,7 @@ fn load_folder() -> Vec<ImageMetadata> {
 
     let folder_contents = fs::read_dir(folder).expect("OOOOPS");
     for file in folder_contents {
-        let image_metadata: ImageMetadata = get_metadata(file.expect("Failed to get file").path());
-
-        files.push(image_metadata);
+        files.push(file.expect("Failed to get file").path());
     }
 
     files
