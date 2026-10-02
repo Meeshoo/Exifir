@@ -277,11 +277,6 @@ fn load_folder() -> Vec<ImageMetadata> {
 fn get_metadata(image_path: PathBuf) -> ImageMetadata {
     let mut image_metadata: ImageMetadata = ImageMetadata::new();
 
-    let metadata: Metadata =
-        Metadata::new_from_path(image_path.as_path()).expect("Failed to get metadata");
-
-    let endian = metadata.get_endian();
-
     image_metadata.image_path = image_path
         .to_str()
         .expect("Failed to convert image path to string")
@@ -293,6 +288,17 @@ fn get_metadata(image_path: PathBuf) -> ImageMetadata {
         .to_str()
         .expect("Failed to convert filename to str")
         .to_string();
+
+    let metadata: Metadata =
+        match Metadata::new_from_path(image_path.as_path()) {
+            Ok(metadata) => metadata,
+            Err(error) => {
+                println!("{}", error);
+                return image_metadata
+            }
+        };
+
+    let endian = metadata.get_endian();
 
     let datetime_created = match metadata
         .get_tag(&&ExifTag::DateTimeOriginal(String::new()))
