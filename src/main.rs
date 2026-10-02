@@ -12,8 +12,6 @@ use rfd::FileDialog;
 
 struct Viewer {
     path_of_all_images: Vec<String>,
-    image_path: String,
-    image_filename: String,
     metadata_datetime_created: String,
     metadata_camera_brand: String,
     metadata_camera_model: String,
@@ -31,6 +29,11 @@ struct ImageMetadata {
     gps_longitude: String,
 }
 
+struct ImageContainer {
+    image_path: String,
+    image_filename: String,
+}
+
 #[derive(Debug, Clone, Copy)]
 enum Message {
     OpenFolder,
@@ -43,6 +46,15 @@ enum Message {
 //     DialogClosed,
 //     MetadataGetFailed,
 // }
+
+impl ImageContainer {
+    fn new() -> Self {
+        ImageContainer {
+            image_path: String::from(""),
+            image_filename: String::from(""),
+        }
+    }
+}
 
 impl ImageMetadata {
     fn new() -> Self {
@@ -61,8 +73,6 @@ impl Viewer {
     fn new() -> Self {
         Viewer {
             path_of_all_images: Vec::new(),
-            image_path: String::from(""),
-            image_filename: String::from(""),
             metadata_datetime_created: String::from(""),
             metadata_camera_brand: String::from(""),
             metadata_camera_model: String::from(""),
@@ -81,10 +91,6 @@ impl Viewer {
             Message::OpenFolder => {
                 self.path_of_all_images = load_folder();
 
-                // THIS IS HARD CODED FOR NOW
-                self.image_path = String::from("/home/mitch/Pictures/EXIFIR_TEST/000086280005.jpg");
-                self.image_filename = String::from("THIS IS HARDCODED");
-
                 let metadata = get_metadata(PathBuf::from(
                     "/home/mitch/Pictures/EXIFIR_TEST/000086280005.jpg",
                 ));
@@ -99,10 +105,6 @@ impl Viewer {
             Message::OpenFiles => {
                 self.path_of_all_images = load_files();
 
-                // THIS IS HARD CODED FOR NOW
-                self.image_path = String::from("/home/mitch/Pictures/EXIFIR_TEST/000086280005.jpg");
-                self.image_filename = String::from("THIS IS HARDCODED");
-
                 let metadata = get_metadata(PathBuf::from(
                     "/home/mitch/Pictures/EXIFIR_TEST/000086280005.jpg",
                 ));
@@ -116,8 +118,6 @@ impl Viewer {
             }
             Message::CloseFolder => {
                 self.path_of_all_images = Vec::new();
-                self.image_path = String::from("");
-                self.image_filename = String::from("");
                 self.metadata_datetime_created = String::from("");
                 self.metadata_camera_brand = String::from("");
                 self.metadata_camera_model = String::from("");
@@ -136,23 +136,34 @@ impl Viewer {
         let menu = row![open_folder_button, open_multiple_files_button, reset_button].spacing(10);
 
         // IMAGE PANEL
-        let image_name: text::Text = text(&self.image_filename)
-            .height(Shrink)
-            .width(Fill)
-            .height(20)
-            .center();
+        // let image_name: text::Text = text(&self.image_filename)
+        //     .height(Shrink)
+        //     .width(Fill)
+        //     .height(20)
+        //     .center();
 
         let mut image_grid = grid!().columns(3);
 
         for image in &self.path_of_all_images {
-            let iced_image: image::Image = image::Image::new(image).width(150);
-            image_grid = image_grid.push(iced_image);
+            let iced_image: image::Image = image::Image::new(image).width(Fill).height(Fill);
+            let iced_image_name: text::Text = text("example-teehee.jpg")
+                .height(Shrink)
+                .width(Fill)
+                .height(20)
+                .center();
+            let image_column = column!(iced_image, iced_image_name).spacing(10);
+            let image_container = container(image_column)
+                .style(container::bordered_box)
+                .padding(5)
+                .max_width(300)
+                .max_height(300);
+            image_grid = image_grid.push(image_container);
             self.path_of_all_images.iter().next();
         }
 
-        let image_container = column!(image_grid, image_name).spacing(10);
+        //let images_container = column!(image_grid, image_name).spacing(10);
 
-        let image_panel = container(image_container)
+        let image_panel = container(image_grid)
             .style(container::bordered_box)
             .height(Fill)
             .width(Fill)
