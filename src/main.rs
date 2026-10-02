@@ -1,8 +1,8 @@
+use std::ffi::OsStr;
 use std::fmt::Debug;
-use std::fs;
+use std::fs::self;
 use std::path::PathBuf;
 
-use iced::advanced::{mouse, Widget};
 use little_exif::exif_tag::ExifTag;
 use little_exif::metadata::Metadata;
 
@@ -234,7 +234,7 @@ impl Viewer {
 fn load_files() -> Vec<PathBuf> {
     let file_handles = match FileDialog::new()
         .set_directory("Pictures/")
-        .add_filter("images", &["jpg", "jpeg", "png"])
+        .add_filter("images", &["jpg", "jpeg", "png", "tiff"])
         .set_title("Choose multiple files...")
         .pick_files()
     {
@@ -249,6 +249,8 @@ fn load_files() -> Vec<PathBuf> {
 }
 
 fn load_folder() -> Vec<PathBuf> {
+    let valid_file_extensions: Vec<&OsStr> =
+        vec![OsStr::new("jpg"), OsStr::new("jpeg"), OsStr::new("png"), OsStr::new("tiff")];
     let mut files: Vec<PathBuf> = Vec::new();
     let folder = match FileDialog::new()
         .set_directory("Pictures/")
@@ -264,6 +266,17 @@ fn load_folder() -> Vec<PathBuf> {
 
     let folder_contents = fs::read_dir(folder).expect("OOOOPS");
     for file in folder_contents {
+        if file
+            .as_ref()
+            .expect("Failed to get file")
+            .file_type()
+            .expect("Failed to get file type")
+            .is_dir()
+            || !valid_file_extensions
+                .contains(&file.as_ref().expect("Failed to get file").path().extension().expect("Failed to get file extension"))
+        {
+            continue;
+        }
         files.push(file.expect("Failed to get file").path());
     }
 
