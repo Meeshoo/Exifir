@@ -1,6 +1,6 @@
 use std::ffi::OsStr;
 use std::fmt::Debug;
-use std::fs::self;
+use std::fs;
 use std::path::PathBuf;
 
 use little_exif::exif_tag::ExifTag;
@@ -249,8 +249,13 @@ fn load_files() -> Vec<PathBuf> {
 }
 
 fn load_folder() -> Vec<PathBuf> {
-    let valid_file_extensions: Vec<&OsStr> =
-        vec![OsStr::new("jpg"), OsStr::new("jpeg"), OsStr::new("png"), OsStr::new("tiff")];
+    let valid_file_extensions: Vec<&OsStr> = vec![
+        OsStr::new("jpg"),
+        OsStr::new("JPG"),
+        OsStr::new("jpeg"),
+        OsStr::new("png"),
+        OsStr::new("tiff"),
+    ];
     let mut files: Vec<PathBuf> = Vec::new();
     let folder = match FileDialog::new()
         .set_directory("Pictures/")
@@ -272,8 +277,14 @@ fn load_folder() -> Vec<PathBuf> {
             .file_type()
             .expect("Failed to get file type")
             .is_dir()
-            || !valid_file_extensions
-                .contains(&file.as_ref().expect("Failed to get file").path().extension().expect("Failed to get file extension"))
+            || !valid_file_extensions.contains(
+                &file
+                    .as_ref()
+                    .expect("Failed to get file")
+                    .path()
+                    .extension()
+                    .expect("Failed to get file extension"),
+            )
         {
             continue;
         }
