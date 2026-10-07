@@ -2,7 +2,6 @@ use std::ffi::OsStr;
 use std::fmt::Debug;
 use std::fs;
 use std::path::PathBuf;
-use std::str::pattern::Pattern;
 
 use little_exif::exif_tag::ExifTag;
 use little_exif::metadata::Metadata;
@@ -20,8 +19,8 @@ struct Viewer {
     selected_image_camera_model: String,
     selected_image_user_comment: String,
     selected_image_description: String,
-    selected_image_gps_latitude: String,
-    selected_image_gps_longitude: String,
+    // selected_image_gps_latitude: String,
+    // selected_image_gps_longitude: String,
 }
 
 struct ImageMetadata {
@@ -32,8 +31,8 @@ struct ImageMetadata {
     camera_model: String,
     user_comment: String,
     description: String,
-    gps_latitude: String,
-    gps_longitude: String,
+    // gps_latitude: String,
+    // gps_longitude: String,
 }
 
 #[derive(Debug, Clone)]
@@ -62,8 +61,8 @@ impl ImageMetadata {
             camera_model: String::new(),
             user_comment: String::new(),
             description: String::new(),
-            gps_latitude: String::new(),
-            gps_longitude: String::new(),
+            // gps_latitude: String::new(),
+            // gps_longitude: String::new(),
         }
     }
 }
@@ -78,8 +77,8 @@ impl Viewer {
             selected_image_camera_model: String::from(""),
             selected_image_user_comment: String::from(""),
             selected_image_description: String::from(""),
-            selected_image_gps_latitude: String::from(""),
-            selected_image_gps_longitude: String::from(""),
+            // selected_image_gps_latitude: String::from(""),
+            // selected_image_gps_longitude: String::from(""),
         }
     }
 
@@ -102,8 +101,8 @@ impl Viewer {
                 self.selected_image_camera_model = String::from("");
                 self.selected_image_user_comment = String::from("");
                 self.selected_image_description = String::from("");
-                self.selected_image_gps_latitude = String::from("");
-                self.selected_image_gps_longitude = String::from("");
+                // self.selected_image_gps_latitude = String::from("");
+                // self.selected_image_gps_longitude = String::from("");
             }
             Message::SelectImage { file_path } => {
                 self.selected_image = file_path;
@@ -115,8 +114,8 @@ impl Viewer {
                 self.selected_image_camera_model = metadata.camera_model;
                 self.selected_image_user_comment = metadata.user_comment;
                 self.selected_image_description = metadata.description;
-                self.selected_image_gps_latitude = metadata.gps_latitude;
-                self.selected_image_gps_longitude = metadata.gps_longitude;
+                // self.selected_image_gps_latitude = metadata.gps_latitude;
+                // self.selected_image_gps_longitude = metadata.gps_longitude;
             }
             Message::SaveMetadeta => {
                 save_metadata(
@@ -126,8 +125,8 @@ impl Viewer {
                     &self.selected_image_camera_model,
                     &self.selected_image_user_comment,
                     &self.selected_image_description,
-                    &self.selected_image_gps_latitude,
-                    &self.selected_image_gps_longitude,
+                    // &self.selected_image_gps_latitude,
+                    // &self.selected_image_gps_longitude,
                 );
             }
         }
@@ -230,17 +229,17 @@ impl Viewer {
                 .width(Shrink)
                 .center();
 
-        let selected_image_gps_latitude: text::Text =
-            text("GPS Latitude: ".to_owned() + &self.selected_image_gps_latitude)
-                .height(Shrink)
-                .width(Shrink)
-                .center();
+        // let selected_image_gps_latitude: text::Text =
+        //     text("GPS Latitude: ".to_owned() + &self.selected_image_gps_latitude)
+        //         .height(Shrink)
+        //         .width(Shrink)
+        //         .center();
 
-        let selected_image_gps_longitude: text::Text =
-            text("GPS Longitude: ".to_owned() + &self.selected_image_gps_longitude)
-                .height(Shrink)
-                .width(Shrink)
-                .center();
+        // let selected_image_gps_longitude: text::Text =
+        //     text("GPS Longitude: ".to_owned() + &self.selected_image_gps_longitude)
+        //         .height(Shrink)
+        //         .width(Shrink)
+        //         .center();
 
         let metadata_container: Column<'_, Message> = column!(
             selected_image_datetime_created,
@@ -248,8 +247,8 @@ impl Viewer {
             selected_image_camera_model,
             selected_image_user_comment,
             selected_image_description,
-            selected_image_gps_latitude,
-            selected_image_gps_longitude
+            // selected_image_gps_latitude,
+            // selected_image_gps_longitude
         )
         .width(Shrink)
         .spacing(10)
@@ -427,31 +426,31 @@ fn get_metadata(image_path: PathBuf) -> ImageMetadata {
         &endian,
     );
 
-    let gps_latitude = match metadata.get_tag(&&ExifTag::GPSLatitude(Vec::new())).next() {
-        Some(gps_latitude) => gps_latitude,
-        None => {
-            println!("Could not get GPSLatitude from selected image");
-            &ExifTag::GPSLatitude(Vec::new())
-        }
-    };
+    // let gps_latitude = match metadata.get_tag(&&ExifTag::GPSLatitude(Vec::new())).next() {
+    //     Some(gps_latitude) => gps_latitude,
+    //     None => {
+    //         println!("Could not get GPSLatitude from selected image");
+    //         &ExifTag::GPSLatitude(Vec::new())
+    //     }
+    // };
 
-    image_metadata.gps_latitude = String::from_u8_vec(
-        &gps_latitude.value_as_u8_vec(&metadata.get_endian()),
-        &endian,
-    );
+    // image_metadata.gps_latitude = String::from_u8_vec(
+    //     &gps_latitude.value_as_u8_vec(&metadata.get_endian()),
+    //     &endian,
+    // );
 
-    let gps_longitude = match metadata.get_tag(&&ExifTag::GPSLongitude(Vec::new())).next() {
-        Some(gps_longitude) => gps_longitude,
-        None => {
-            println!("Could not get GPSLongitude from selected image");
-            &ExifTag::GPSLatitude(Vec::new())
-        }
-    };
+    // let gps_longitude = match metadata.get_tag(&&ExifTag::GPSLongitude(Vec::new())).next() {
+    //     Some(gps_longitude) => gps_longitude,
+    //     None => {
+    //         println!("Could not get GPSLongitude from selected image");
+    //         &ExifTag::GPSLatitude(Vec::new())
+    //     }
+    // };
 
-    image_metadata.gps_longitude = String::from_u8_vec(
-        &gps_longitude.value_as_u8_vec(&metadata.get_endian()),
-        &endian,
-    );
+    // image_metadata.gps_longitude = String::from_u8_vec(
+    //     &gps_longitude.value_as_u8_vec(&metadata.get_endian()),
+    //     &endian,
+    // );
 
     image_metadata
 }
@@ -463,8 +462,8 @@ fn save_metadata(
     camera_model: &str,
     user_comment: &str,
     description: &str,
-    gps_latitude: &str,
-    gps_longitude: &str,
+    // gps_latitude: &str,
+    // gps_longitude: &str,
 ) {
     let mut metadata: Metadata = match Metadata::new_from_path(image_path.as_path()) {
         Ok(metadata) => metadata,
