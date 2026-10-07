@@ -2,21 +2,24 @@ use std::ffi::OsStr;
 use std::fmt::Debug;
 use std::fs;
 use std::path::PathBuf;
+use std::str::pattern::Pattern;
 
 use little_exif::exif_tag::ExifTag;
 use little_exif::metadata::Metadata;
 
-use iced::widget::{button, column, container, grid, image, row, scrollable, space, text, Column};
+use iced::widget::{Column, button, column, container, grid, image, row, scrollable, space, text};
 use iced::{Fill, Shrink};
 use little_exif::u8conversion::U8conversion;
 use rfd::FileDialog;
 
 struct Viewer {
     path_of_all_images: Vec<PathBuf>,
+    selected_image: PathBuf,
     selected_image_datetime_created: String,
     selected_image_camera_brand: String,
     selected_image_camera_model: String,
     selected_image_user_comment: String,
+    selected_image_description: String,
     selected_image_gps_latitude: String,
     selected_image_gps_longitude: String,
 }
@@ -28,6 +31,7 @@ struct ImageMetadata {
     camera_brand: String,
     camera_model: String,
     user_comment: String,
+    description: String,
     gps_latitude: String,
     gps_longitude: String,
 }
@@ -37,7 +41,9 @@ enum Message {
     OpenFolder,
     OpenFiles,
     CloseFolder,
-    ClickImage { file_path: String },
+    SelectImage { file_path: PathBuf },
+    LoadMetadata,
+    SaveMetadeta,
 }
 
 // #[derive(Debug, Clone)]
@@ -55,6 +61,7 @@ impl ImageMetadata {
             camera_brand: String::new(),
             camera_model: String::new(),
             user_comment: String::new(),
+            description: String::new(),
             gps_latitude: String::new(),
             gps_longitude: String::new(),
         }
@@ -65,10 +72,12 @@ impl Viewer {
     fn new() -> Self {
         Viewer {
             path_of_all_images: Vec::new(),
+            selected_image: PathBuf::new(),
             selected_image_datetime_created: String::from(""),
             selected_image_camera_brand: String::from(""),
             selected_image_camera_model: String::from(""),
             selected_image_user_comment: String::from(""),
+            selected_image_description: String::from(""),
             selected_image_gps_latitude: String::from(""),
             selected_image_gps_longitude: String::from(""),
         }
@@ -92,17 +101,34 @@ impl Viewer {
                 self.selected_image_camera_brand = String::from("");
                 self.selected_image_camera_model = String::from("");
                 self.selected_image_user_comment = String::from("");
+                self.selected_image_description = String::from("");
                 self.selected_image_gps_latitude = String::from("");
                 self.selected_image_gps_longitude = String::from("");
             }
-            Message::ClickImage { file_path } => {
-                let metadata = get_metadata(file_path.into());
+            Message::SelectImage { file_path } => {
+                self.selected_image = file_path;
+            }
+            Message::LoadMetadata => {
+                let metadata = get_metadata(self.selected_image.to_owned());
                 self.selected_image_datetime_created = metadata.datetime_created;
                 self.selected_image_camera_brand = metadata.camera_brand;
                 self.selected_image_camera_model = metadata.camera_model;
                 self.selected_image_user_comment = metadata.user_comment;
+                self.selected_image_description = metadata.description;
                 self.selected_image_gps_latitude = metadata.gps_latitude;
                 self.selected_image_gps_longitude = metadata.gps_longitude;
+            }
+            Message::SaveMetadeta => {
+                save_metadata(
+                    &self.selected_image.clone(),
+                    &self.selected_image_datetime_created,
+                    &self.selected_image_camera_brand,
+                    &self.selected_image_camera_model,
+                    &self.selected_image_user_comment,
+                    &self.selected_image_description,
+                    &self.selected_image_gps_latitude,
+                    &self.selected_image_gps_longitude,
+                );
             }
         }
     }
@@ -111,10 +137,18 @@ impl Viewer {
         // MENU
         let open_folder_button = button("Open Folder").on_press(Message::OpenFolder);
         let open_multiple_files_button = button("Open Files").on_press(Message::OpenFiles);
+        let load_metadata_button =
+            button("Load Metadata from Selected Image").on_press(Message::LoadMetadata);
+        let save_metadata_button =
+            button("Save Metadata to Selected Image").on_press(Message::SaveMetadeta);
         let reset_button = button("Close Current Folder").on_press(Message::CloseFolder);
+
         let menu = row![
             open_folder_button,
             open_multiple_files_button,
+            space::Space::new().width(Fill),
+            load_metadata_button,
+            save_metadata_button,
             space::Space::new().width(Fill),
             reset_button
         ]
@@ -146,12 +180,8 @@ impl Viewer {
                         .max_width(300)
                         .max_height(300),
                 )
-                .on_press(Message::ClickImage {
-                    file_path: item
-                        .as_path()
-                        .to_str()
-                        .expect("Failed to convert path to string")
-                        .to_string(),
+                .on_press(Message::SelectImage {
+                    file_path: item.into(),
                 })
                 .style(button::subtle);
                 image_grid = image_grid.push(image_container);
@@ -194,6 +224,12 @@ impl Viewer {
                 .width(Shrink)
                 .center();
 
+        let selected_image_description: text::Text =
+            text("Image Description: ".to_owned() + &self.selected_image_description)
+                .height(Shrink)
+                .width(Shrink)
+                .center();
+
         let selected_image_gps_latitude: text::Text =
             text("GPS Latitude: ".to_owned() + &self.selected_image_gps_latitude)
                 .height(Shrink)
@@ -211,6 +247,7 @@ impl Viewer {
             selected_image_camera_brand,
             selected_image_camera_model,
             selected_image_user_comment,
+            selected_image_description,
             selected_image_gps_latitude,
             selected_image_gps_longitude
         )
@@ -312,7 +349,7 @@ fn get_metadata(image_path: PathBuf) -> ImageMetadata {
     let metadata: Metadata = match Metadata::new_from_path(image_path.as_path()) {
         Ok(metadata) => metadata,
         Err(error) => {
-            println!("{}", error);
+            println!("{error}");
             return image_metadata;
         }
     };
@@ -374,6 +411,22 @@ fn get_metadata(image_path: PathBuf) -> ImageMetadata {
         &endian,
     );
 
+    let description = match metadata
+        .get_tag(&&ExifTag::ImageDescription(String::new()))
+        .next()
+    {
+        Some(description) => description,
+        None => {
+            println!("Could not get ImageDescription from selected image");
+            &ExifTag::ImageDescription(String::new())
+        }
+    };
+
+    image_metadata.description = String::from_u8_vec(
+        &description.value_as_u8_vec(&metadata.get_endian()),
+        &endian,
+    );
+
     let gps_latitude = match metadata.get_tag(&&ExifTag::GPSLatitude(Vec::new())).next() {
         Some(gps_latitude) => gps_latitude,
         None => {
@@ -401,6 +454,35 @@ fn get_metadata(image_path: PathBuf) -> ImageMetadata {
     );
 
     image_metadata
+}
+
+fn save_metadata(
+    image_path: &PathBuf,
+    datetime_created: &str,
+    camera_brand: &str,
+    camera_model: &str,
+    user_comment: &str,
+    description: &str,
+    gps_latitude: &str,
+    gps_longitude: &str,
+) {
+    let mut metadata: Metadata = match Metadata::new_from_path(image_path.as_path()) {
+        Ok(metadata) => metadata,
+        Err(error) => {
+            println!("{error}");
+            Metadata::new()
+        }
+    };
+
+    metadata.set_tag(ExifTag::DateTimeOriginal(datetime_created.into()));
+    metadata.set_tag(ExifTag::Make(camera_brand.into()));
+    metadata.set_tag(ExifTag::Model(camera_model.into()));
+    metadata.set_tag(ExifTag::UserComment(user_comment.into()));
+    metadata.set_tag(ExifTag::ImageDescription(description.into()));
+    // metadata.set_tag(ExifTag::GPSLatitude(gps_latitude));
+    // metadata.set_tag(ExifTag::GPSLongitude(gps_longitude));
+
+    let _ = metadata.write_to_file(image_path.as_path());
 }
 
 pub fn main() -> iced::Result {
