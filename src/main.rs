@@ -6,7 +6,9 @@ use std::path::PathBuf;
 use little_exif::exif_tag::ExifTag;
 use little_exif::metadata::Metadata;
 
-use iced::widget::{Column, button, column, container, grid, image, row, scrollable, space, text};
+use iced::widget::{
+    Column, button, column, container, grid, image, row, scrollable, space, text, text_input,
+};
 use iced::{Fill, Shrink};
 use little_exif::u8conversion::U8conversion;
 use rfd::FileDialog;
@@ -43,6 +45,11 @@ enum Message {
     SelectImage { file_path: PathBuf },
     LoadMetadata,
     SaveMetadeta,
+    DateTimeCreatedChanged(String),
+    CameraBrandChanged(String),
+    CameraModelChanged(String),
+    UserCommentChanged(String),
+    ImageDescriptionChanged(String),
 }
 
 // #[derive(Debug, Clone)]
@@ -129,6 +136,21 @@ impl Viewer {
                     // &self.selected_image_gps_longitude,
                 );
             }
+            Message::DateTimeCreatedChanged(datetime_original) => {
+                self.selected_image_datetime_created = datetime_original;
+            }
+            Message::CameraBrandChanged(camera_brand) => {
+                self.selected_image_camera_brand = camera_brand;
+            }
+            Message::CameraModelChanged(camera_model) => {
+                self.selected_image_camera_model = camera_model;
+            }
+            Message::UserCommentChanged(user_comment) => {
+                self.selected_image_user_comment = user_comment;
+            }
+            Message::ImageDescriptionChanged(image_description) => {
+                self.selected_image_description = image_description;
+            }
         }
     }
 
@@ -199,35 +221,25 @@ impl Viewer {
         );
 
         // METADATA PANEL
-        let selected_image_datetime_created: text::Text =
-            text("Date Created: ".to_owned() + &self.selected_image_datetime_created)
-                .height(Shrink)
-                .width(Shrink)
-                .center();
+        let image_datetime_label = text("Datetime Original: ");
+        let selected_image_datetime_created = text_input("", &self.selected_image_datetime_created)
+            .on_input(Message::DateTimeCreatedChanged);
 
-        let selected_image_camera_brand: text::Text =
-            text("Camera Brand: ".to_owned() + &self.selected_image_camera_brand)
-                .height(Shrink)
-                .width(Shrink)
-                .center();
+        let image_camera_brand = text("Camera Brand: ");
+        let selected_image_camera_brand =
+            text_input("", &self.selected_image_camera_brand).on_input(Message::CameraBrandChanged);
 
-        let selected_image_camera_model: text::Text =
-            text("Camera Model: ".to_owned() + &self.selected_image_camera_model)
-                .height(Shrink)
-                .width(Shrink)
-                .center();
+        let image_camera_model = text("Camera Model: ");
+        let selected_image_camera_model =
+            text_input("", &self.selected_image_camera_model).on_input(Message::CameraModelChanged);
 
-        let selected_image_user_comment: text::Text =
-            text("User Comment: ".to_owned() + &self.selected_image_user_comment)
-                .height(Shrink)
-                .width(Shrink)
-                .center();
+        let image_user_comment = text("User Comment: ");
+        let selected_image_user_comment =
+            text_input("", &self.selected_image_user_comment).on_input(Message::UserCommentChanged);
 
-        let selected_image_description: text::Text =
-            text("Image Description: ".to_owned() + &self.selected_image_description)
-                .height(Shrink)
-                .width(Shrink)
-                .center();
+        let image_description = text("Image Description: ");
+        let selected_image_description = text_input("", &self.selected_image_description)
+            .on_input(Message::ImageDescriptionChanged);
 
         // let selected_image_gps_latitude: text::Text =
         //     text("GPS Latitude: ".to_owned() + &self.selected_image_gps_latitude)
@@ -242,10 +254,15 @@ impl Viewer {
         //         .center();
 
         let metadata_container: Column<'_, Message> = column!(
+            image_datetime_label,
             selected_image_datetime_created,
+            image_camera_brand,
             selected_image_camera_brand,
+            image_camera_model,
             selected_image_camera_model,
+            image_user_comment,
             selected_image_user_comment,
+            image_description,
             selected_image_description,
             // selected_image_gps_latitude,
             // selected_image_gps_longitude
