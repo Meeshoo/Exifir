@@ -176,7 +176,7 @@ impl Viewer {
         .spacing(10);
 
         // IMAGE PANEL
-        let mut image_grid = grid!().columns(3);
+        let mut image_grid = grid!().columns(5);
 
         if self.path_of_all_images.len() != 0 {
             for item in &self.path_of_all_images {
