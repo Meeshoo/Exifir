@@ -17,7 +17,7 @@ struct Viewer {
     path_of_all_images: Vec<PathBuf>,
     selected_image: PathBuf,
     selected_image_datetime_created: String,
-    selected_image_camera_brand: String,
+    selected_image_camera_make: String,
     selected_image_camera_model: String,
     selected_image_user_comment: String,
     selected_image_description: String,
@@ -29,7 +29,7 @@ struct ImageMetadata {
     image_path: String,
     image_filename: String,
     datetime_created: String,
-    camera_brand: String,
+    camera_make: String,
     camera_model: String,
     user_comment: String,
     description: String,
@@ -46,7 +46,7 @@ enum Message {
     LoadMetadata,
     SaveMetadeta,
     DateTimeCreatedChanged(String),
-    CameraBrandChanged(String),
+    CameraMakeChanged(String),
     CameraModelChanged(String),
     UserCommentChanged(String),
     ImageDescriptionChanged(String),
@@ -64,7 +64,7 @@ impl ImageMetadata {
             image_path: String::new(),
             image_filename: String::new(),
             datetime_created: String::new(),
-            camera_brand: String::new(),
+            camera_make: String::new(),
             camera_model: String::new(),
             user_comment: String::new(),
             description: String::new(),
@@ -80,7 +80,7 @@ impl Viewer {
             path_of_all_images: Vec::new(),
             selected_image: PathBuf::new(),
             selected_image_datetime_created: String::from(""),
-            selected_image_camera_brand: String::from(""),
+            selected_image_camera_make: String::from(""),
             selected_image_camera_model: String::from(""),
             selected_image_user_comment: String::from(""),
             selected_image_description: String::from(""),
@@ -104,7 +104,7 @@ impl Viewer {
             Message::CloseFolder => {
                 self.path_of_all_images = Vec::new();
                 self.selected_image_datetime_created = String::from("");
-                self.selected_image_camera_brand = String::from("");
+                self.selected_image_camera_make = String::from("");
                 self.selected_image_camera_model = String::from("");
                 self.selected_image_user_comment = String::from("");
                 self.selected_image_description = String::from("");
@@ -117,7 +117,7 @@ impl Viewer {
             Message::LoadMetadata => {
                 let metadata = get_metadata(self.selected_image.to_owned());
                 self.selected_image_datetime_created = metadata.datetime_created;
-                self.selected_image_camera_brand = metadata.camera_brand;
+                self.selected_image_camera_make = metadata.camera_make;
                 self.selected_image_camera_model = metadata.camera_model;
                 self.selected_image_user_comment = metadata.user_comment;
                 self.selected_image_description = metadata.description;
@@ -128,7 +128,7 @@ impl Viewer {
                 save_metadata(
                     &self.selected_image.clone(),
                     &self.selected_image_datetime_created,
-                    &self.selected_image_camera_brand,
+                    &self.selected_image_camera_make,
                     &self.selected_image_camera_model,
                     &self.selected_image_user_comment,
                     &self.selected_image_description,
@@ -139,8 +139,8 @@ impl Viewer {
             Message::DateTimeCreatedChanged(datetime_original) => {
                 self.selected_image_datetime_created = datetime_original;
             }
-            Message::CameraBrandChanged(camera_brand) => {
-                self.selected_image_camera_brand = camera_brand;
+            Message::CameraMakeChanged(camera_make) => {
+                self.selected_image_camera_make = camera_make;
             }
             Message::CameraModelChanged(camera_model) => {
                 self.selected_image_camera_model = camera_model;
@@ -235,9 +235,9 @@ impl Viewer {
         let selected_image_datetime_created = text_input("", &self.selected_image_datetime_created)
             .on_input(Message::DateTimeCreatedChanged);
 
-        let image_camera_brand = text("Camera Brand: ");
-        let selected_image_camera_brand =
-            text_input("", &self.selected_image_camera_brand).on_input(Message::CameraBrandChanged);
+        let image_camera_make = text("Camera Make: ");
+        let selected_image_camera_make =
+            text_input("", &self.selected_image_camera_make).on_input(Message::CameraMakeChanged);
 
         let image_camera_model = text("Camera Model: ");
         let selected_image_camera_model =
@@ -266,8 +266,8 @@ impl Viewer {
         let metadata_container: Column<'_, Message> = column!(
             image_datetime_label,
             selected_image_datetime_created,
-            image_camera_brand,
-            selected_image_camera_brand,
+            image_camera_make,
+            selected_image_camera_make,
             image_camera_model,
             selected_image_camera_model,
             image_user_comment,
@@ -398,16 +398,16 @@ fn get_metadata(image_path: PathBuf) -> ImageMetadata {
         &endian,
     );
 
-    let camera_brand = match metadata.get_tag(&&ExifTag::Make(String::new())).next() {
-        Some(camera_brand) => camera_brand,
+    let camera_make = match metadata.get_tag(&&ExifTag::Make(String::new())).next() {
+        Some(camera_make) => camera_make,
         None => {
             println!("Could not get Make from selected image");
             &ExifTag::Make(String::new())
         }
     };
 
-    image_metadata.camera_brand = String::from_u8_vec(
-        &camera_brand.value_as_u8_vec(&metadata.get_endian()),
+    image_metadata.camera_make = String::from_u8_vec(
+        &camera_make.value_as_u8_vec(&metadata.get_endian()),
         &endian,
     );
 
@@ -485,7 +485,7 @@ fn get_metadata(image_path: PathBuf) -> ImageMetadata {
 fn save_metadata(
     image_path: &PathBuf,
     datetime_created: &str,
-    camera_brand: &str,
+    camera_make: &str,
     camera_model: &str,
     user_comment: &str,
     description: &str,
@@ -501,7 +501,7 @@ fn save_metadata(
     };
 
     metadata.set_tag(ExifTag::DateTimeOriginal(datetime_created.into()));
-    metadata.set_tag(ExifTag::Make(camera_brand.into()));
+    metadata.set_tag(ExifTag::Make(camera_make.into()));
     metadata.set_tag(ExifTag::Model(camera_model.into()));
     metadata.set_tag(ExifTag::UserComment(user_comment.into()));
     metadata.set_tag(ExifTag::ImageDescription(description.into()));
