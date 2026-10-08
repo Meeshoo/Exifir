@@ -193,15 +193,28 @@ impl Viewer {
                 .width(Fill)
                 .center();
                 let image_column = column!(image, image_name).spacing(10);
-                let image_container = button(
-                    container(image_column)
-                        .style(container::bordered_box)
-                        .padding(5)
-                )
-                .on_press(Message::SelectImage {
-                    file_path: item.into(),
-                })
-                .style(button::subtle);
+                let image_container;
+                if &self.selected_image == item {
+                    image_container = button(
+                        container(image_column)
+                            .style(container::bordered_box)
+                            .padding(5),
+                    )
+                    .on_press(Message::SelectImage {
+                        file_path: item.into(),
+                    })
+                    .style(button::primary);
+                } else {
+                    image_container = button(
+                        container(image_column)
+                            .style(container::bordered_box)
+                            .padding(5),
+                    )
+                    .on_press(Message::SelectImage {
+                        file_path: item.into(),
+                    })
+                    .style(button::subtle);
+                }
                 image_grid = image_grid.push(image_container);
                 self.path_of_all_images.iter().next();
             }
