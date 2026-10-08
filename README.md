@@ -1,18 +1,22 @@
 <div align="center">
 
-<img src="docs/icon.png" width="180px" />
+<img src="docs/header.png" width="800px" />
 
 # Exifir
 
-A small desktop app for viewing and editing image EXIF metadata, written in Rust using <a href="https://github.com/iced-rs/iced">iced</a>.
+A small desktop app for editing image EXIF metadata, written in Rust using <a href="https://github.com/iced-rs/iced">iced</a>.
 
-<img src="docs/screenshot.jpg" width="720px">
+> [!WARNING]  
+> Exifir is in very early development with only the basic functionality implemented, there will likely be issues
+
+<img src="docs/screenshot.jpg" width="800px">
 
 </div>
 
 
 ## ⬇️ Download
-One day I will ship some prebuilt binaries, for now you need to build from source.
+An AppImage for Linux and an EXE for Windows are available on the Releases page.\
+Other platforms will need to build from source for now.
 ## 🔨 Build from source
 First, pull the repo however you like.\
 Then build with:

@@ -1,9 +1,17 @@
 [package]
 name = "exifir"
 version = "0.1.0"
+description = "A small desktop application for editing image EXIF metadata"
+readme = "README.md"
+license = "GPL-3.0-only"
+repository = "https://github.com/Meeshoo/Exifir"
 edition = "2024"
+
+[package.metadata.appimage]
+icon = "assets/images/icon.png"
 
 [dependencies]
 iced = { version ="0.14.0", features = ["image"] }
 rfd = "0.17"
 little_exif = "0.6.23"
+
