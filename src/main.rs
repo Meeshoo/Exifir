@@ -191,15 +191,12 @@ impl Viewer {
                 )
                 .height(Shrink)
                 .width(Fill)
-                .height(20)
                 .center();
                 let image_column = column!(image, image_name).spacing(10);
                 let image_container = button(
                     container(image_column)
                         .style(container::bordered_box)
                         .padding(5)
-                        .max_width(300)
-                        .max_height(300),
                 )
                 .on_press(Message::SelectImage {
                     file_path: item.into(),
@@ -267,14 +264,14 @@ impl Viewer {
             // selected_image_gps_latitude,
             // selected_image_gps_longitude
         )
-        .width(Shrink)
+        .width(350)
         .spacing(10)
         .padding(50);
 
         let metadata_panel: container::Container<'_, _> = container(metadata_container)
             .style(container::bordered_box)
             .height(Fill)
-            .width(300)
+            .width(350)
             .center(Shrink);
 
         let main_workspace = row!(image_panel, metadata_panel);
