@@ -6,13 +6,12 @@
 
 A small desktop app for editing image EXIF metadata, written in Rust using <a href="https://github.com/iced-rs/iced">iced</a>.
 
-> [!WARNING]  
-> Exifir is in very early development with only the basic functionality implemented, there will likely be issues
-
 <img src="docs/screenshot.jpg" width="800px">
 
 </div>
 
+> [!WARNING]  
+> Exifir is in very early development with only the basic functionality implemented, there will likely be issues and missing functionality
 
 ## ⬇️ Download
 An AppImage for Linux and an EXE for Windows are available on the Releases page.\
