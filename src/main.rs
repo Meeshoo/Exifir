@@ -297,7 +297,10 @@ impl Viewer {
 fn load_files() -> Vec<PathBuf> {
     let file_handles = match FileDialog::new()
         .set_directory("Pictures/")
-        .add_filter("images", &["jpg", "jpeg", "png", "tiff"])
+        .add_filter(
+            "images",
+            &["jpg", "JPG", "jpeg", "JPEG", "png", "PNG", "tiff", "TIFF"],
+        )
         .set_title("Choose multiple files...")
         .pick_files()
     {
@@ -316,8 +319,11 @@ fn load_folder() -> Vec<PathBuf> {
         OsStr::new("jpg"),
         OsStr::new("JPG"),
         OsStr::new("jpeg"),
+        OsStr::new("JPEG"),
         OsStr::new("png"),
+        OsStr::new("PNG"),
         OsStr::new("tiff"),
+        OsStr::new("TIFF"),
     ];
     let mut files: Vec<PathBuf> = Vec::new();
     let folder = match FileDialog::new()
