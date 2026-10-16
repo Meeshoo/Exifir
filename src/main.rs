@@ -115,7 +115,7 @@ impl Viewer {
                 self.selected_image = file_path;
             }
             Message::LoadMetadata => {
-                let metadata = get_metadata(self.selected_image.to_owned());
+                let metadata = get_metadata(&self.selected_image);
                 self.selected_image_datetime_created = metadata.datetime_created;
                 self.selected_image_camera_make = metadata.camera_make;
                 self.selected_image_camera_model = metadata.camera_model;
@@ -363,7 +363,7 @@ fn load_folder() -> Vec<PathBuf> {
     files
 }
 
-fn get_metadata(image_path: PathBuf) -> ImageMetadata {
+fn get_metadata(image_path: &PathBuf) -> ImageMetadata {
     let mut image_metadata: ImageMetadata = ImageMetadata::new();
 
     image_metadata.image_path = image_path
@@ -389,7 +389,7 @@ fn get_metadata(image_path: PathBuf) -> ImageMetadata {
     let endian = metadata.get_endian();
 
     let datetime_created = match metadata
-        .get_tag(&&ExifTag::DateTimeOriginal(String::new()))
+        .get_tag(&ExifTag::DateTimeOriginal(String::new()))
         .next()
     {
         Some(datetime_created) => datetime_created,
@@ -404,7 +404,7 @@ fn get_metadata(image_path: PathBuf) -> ImageMetadata {
         &endian,
     );
 
-    let camera_make = match metadata.get_tag(&&ExifTag::Make(String::new())).next() {
+    let camera_make = match metadata.get_tag(&ExifTag::Make(String::new())).next() {
         Some(camera_make) => camera_make,
         None => {
             println!("Could not get Make from selected image");
@@ -417,7 +417,7 @@ fn get_metadata(image_path: PathBuf) -> ImageMetadata {
         &endian,
     );
 
-    let camera_model = match metadata.get_tag(&&ExifTag::Model(String::new())).next() {
+    let camera_model = match metadata.get_tag(&ExifTag::Model(String::new())).next() {
         Some(camera_model) => camera_model,
         None => {
             println!("Could not get Model from selected image");
@@ -430,7 +430,7 @@ fn get_metadata(image_path: PathBuf) -> ImageMetadata {
         &endian,
     );
 
-    let user_comment = match metadata.get_tag(&&ExifTag::UserComment(Vec::new())).next() {
+    let user_comment = match metadata.get_tag(&ExifTag::UserComment(Vec::new())).next() {
         Some(user_comment) => user_comment,
         None => {
             println!("Could not get UserComment from selected image");
@@ -444,7 +444,7 @@ fn get_metadata(image_path: PathBuf) -> ImageMetadata {
     );
 
     let description = match metadata
-        .get_tag(&&ExifTag::ImageDescription(String::new()))
+        .get_tag(&ExifTag::ImageDescription(String::new()))
         .next()
     {
         Some(description) => description,
@@ -459,7 +459,7 @@ fn get_metadata(image_path: PathBuf) -> ImageMetadata {
         &endian,
     );
 
-    // let gps_latitude = match metadata.get_tag(&&ExifTag::GPSLatitude(Vec::new())).next() {
+    // let gps_latitude = match metadata.get_tag(&ExifTag::GPSLatitude(Vec::new())).next() {
     //     Some(gps_latitude) => gps_latitude,
     //     None => {
     //         println!("Could not get GPSLatitude from selected image");
@@ -472,7 +472,7 @@ fn get_metadata(image_path: PathBuf) -> ImageMetadata {
     //     &endian,
     // );
 
-    // let gps_longitude = match metadata.get_tag(&&ExifTag::GPSLongitude(Vec::new())).next() {
+    // let gps_longitude = match metadata.get_tag(&ExifTag::GPSLongitude(Vec::new())).next() {
     //     Some(gps_longitude) => gps_longitude,
     //     None => {
     //         println!("Could not get GPSLongitude from selected image");
