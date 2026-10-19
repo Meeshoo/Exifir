@@ -10,6 +10,12 @@ edition = "2024"
 [package.metadata.appimage]
 icon = "assets/images/icon.png"
 
+[package.metadata.bundle]
+name = "Exifir"
+identifier = "com.meeshoo.exifir"
+icon = ["assets/images/icon.png"]
+category = "Utility"
+
 [dependencies]
 iced = { version ="0.14.0", features = ["image"] }
 rfd = "0.17"
