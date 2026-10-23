@@ -27,6 +27,11 @@ And run the binary with:
 ./target/release/exifir
 ```
 
+On macOS, you can build an app bundle with <a href="https://github.com/burtonageo/cargo-bundle">cargo-bundle</a>:
+```
+cargo install cargo-bundle; cargo bundle --release
+```
+
 ## 📢 Feedback
 
 Feel free to create issues on GitHub for any bugs, feature requests, or general feedback.
